@@ -1,0 +1,9 @@
+SVGA Web Player
+Copyright 2026 hagoss contributors
+
+This product includes software developed by the SVGAPlayer-Web-Lite project:
+https://github.com/svga/SVGAPlayer-Web-Lite
+
+This repository contains substantial modifications to the upstream project,
+including Rust/WASM parsing, WebGL rendering, shared asset management, and
+parser fallback improvements.

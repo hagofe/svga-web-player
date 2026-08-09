@@ -1,0 +1,94 @@
+{
+  "name": "@hagoss/svga-web-player",
+  "version": "2.6.9",
+  "type": "module",
+  "description": "Lightweight SVGA Web Player",
+  "main": "dist/index.mjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./parser-worker.iife.js": "./dist/parser-worker.iife.js",
+    "./svga_wasm_bg.wasm": "./dist/svga_wasm_bg.wasm"
+  },
+  "keywords": [
+    "svga"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hagofe/svga-web-player.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hagofe/svga-web-player/issues"
+  },
+  "homepage": "https://github.com/hagofe/svga-web-player#readme",
+  "scripts": {
+    "dev": "vite",
+    "clean": "rimraf dist",
+    "lint": "oxlint src",
+    "format": "oxfmt --write src scripts",
+    "type:check": "tsc --noEmit --skipLibCheck",
+    "build:wasm": "cd crates/svga-wasm && wasm-pack build --target web --out-dir ../../pkg",
+    "build:core": "tsdown && cp pkg/svga_wasm_bg.wasm dist/",
+    "build:site": "run-s clean && vite build",
+    "build": "run-s clean build:wasm build:core",
+    "preview:site": "vite preview",
+    "prepack": "pnpm build",
+    "prepare": "simple-git-hooks",
+    "test": "vitest run --passWithNoTests",
+    "release": "release-it --ci"
+  },
+  "files": [
+    "dist",
+    "dist/svga-parser.wasm"
+  ],
+  "author": "hagoss contributors",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "@release-it/conventional-changelog": "^10.0.4",
+    "@types/earcut": "^3.0.0",
+    "@types/node": "^22.10.2",
+    "lint-staged": "^16.2.7",
+    "npm-run-all2": "^7.0.2",
+    "oxfmt": "^0.17.0",
+    "oxlint": "^1.32.0",
+    "protobufjs": "^7.4.0",
+    "release-it": "^19.2.2",
+    "rimraf": "^6.0.1",
+    "simple-git-hooks": "^2.13.1",
+    "tsdown": "^0.18.3",
+    "typescript": "^5.7.2",
+    "vite": "8.0.0-beta.1",
+    "vitest": "^4.0.16"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged",
+    "commit-msg": "pnpm commitlint --edit $1"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "oxlint",
+      "oxfmt --write"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "packageManager": "pnpm@9.15.1",
+  "sideEffects": false,
+  "dependencies": {
+    "earcut": "^3.0.2",
+    "fflate": "^0.8.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

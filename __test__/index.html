@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=750, initial-scale=1, maximum-scale=1, user-scalable=0"
+    />
+    <title>SVGA Lite</title>
+    <style>
+      #canvas {
+        max-width: 100%;
+        background-color: black;
+      }
+      #toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      select {
+        min-width: 220px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <select id="svga-select">
+        <option value="angel">angel.svga</option>
+        <option value="shape-path-undefined">shape-path-undefined.svga</option>
+        <option value="11">11.svga</option>
+        <option value="TwitterHeart">TwitterHeart.svga</option>
+        <option value="loading-1">loading-1.svga</option>
+        <option value="kaola">kaola.svga</option>
+        <option value="kingset">kingset.svga</option>
+      </select>
+      <button onclick="window.loadSelected()">Load</button>
+      <button onclick="window.start()">Start</button>
+      <button onclick="window.pause()">Pause</button>
+      <button onclick="window.resume()">Resume</button>
+      <button onclick="window.stop()">Stop</button>
+      <button onclick="window.clear()">Clear</button>
+      <button onclick="window.destroy()">Destroy</button>
+    </div>
+    <canvas id="canvas"></canvas>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "rust-analyzer.linkedProjects": [
+    "crates/svga-wasm/Cargo.toml"
+  ],
+  "oxc.fmt.experimental": true,
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  }
+}
