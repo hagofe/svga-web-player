@@ -32,6 +32,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes protobuf-compiler
+
       - name: Install wasm-pack
         run: cargo install wasm-pack --locked
 
