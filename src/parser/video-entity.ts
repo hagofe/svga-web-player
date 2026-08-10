@@ -1,0 +1,287 @@
+import {
+  Movie,
+  Video,
+  RawImages,
+  ReplaceElements,
+  DynamicElements,
+  VideoFrame,
+  VideoSprite,
+  SHAPE_TYPE,
+  SHAPE_TYPE_CODE,
+  VideoFrameShapes,
+  LINE_CAP_CODE,
+  LINE_JOIN_CODE,
+  RGBA
+} from '../types'
+import { compilePath } from '../path-compiler'
+
+export class VideoEntity implements Video {
+  public version: string
+  public size = { width: 0, height: 0 }
+  public fps: number = 20
+  public frames: number = 0
+  public images: RawImages = {}
+  public replaceElements: ReplaceElements = {}
+  public dynamicElements: DynamicElements = {}
+  public sprites: VideoSprite[] = []
+
+  constructor(movie: Movie, images: RawImages = {}) {
+    this.version = movie.version
+
+    const { viewBoxWidth, viewBoxHeight, fps, frames } = movie.params
+    this.size.width = viewBoxWidth
+    this.size.height = viewBoxHeight
+    this.fps = fps
+    this.frames = frames
+
+    this.sprites = []
+    movie.sprites.forEach((mSprite) => {
+      const vFrames: VideoFrame[] = []
+      const vSprite: VideoSprite = {
+        imageKey: mSprite.imageKey,
+        frames: vFrames
+      }
+
+      let lastShapes: VideoFrameShapes | undefined
+
+      mSprite.frames.forEach((mFrame) => {
+        const layout = {
+          x: mFrame.layout?.x ?? 0.0,
+          y: mFrame.layout?.y ?? 0.0,
+          width: mFrame.layout?.width ?? 0.0,
+          height: mFrame.layout?.height ?? 0.0
+        }
+
+        const transform = {
+          a: mFrame.transform?.a ?? 1.0,
+          b: mFrame.transform?.b ?? 0.0,
+          c: mFrame.transform?.c ?? 0.0,
+          d: mFrame.transform?.d ?? 1.0,
+          tx: mFrame.transform?.tx ?? 0.0,
+          ty: mFrame.transform?.ty ?? 0.0
+        }
+
+        const clipPath = mFrame.clipPath ?? ''
+
+        let shapes: VideoFrameShapes = []
+
+        mFrame.shapes.forEach((mShape) => {
+          const mStyles = mShape.styles
+          if (mStyles === null) return
+
+          const lineDash: number[] = []
+          if (mStyles.lineDashI !== null && mStyles.lineDashI > 0) {
+            lineDash.push(mStyles.lineDashI)
+          }
+          if (mStyles.lineDashII !== null && mStyles.lineDashII > 0) {
+            if (lineDash.length < 1) {
+              lineDash.push(0)
+            }
+            lineDash.push(mStyles.lineDashII)
+          }
+          if (mStyles.lineDashIII !== null && mStyles.lineDashIII > 0) {
+            if (lineDash.length < 2) {
+              lineDash.push(0)
+              lineDash.push(0)
+            }
+            lineDash[2] = mStyles.lineDashIII
+          }
+
+          let lineCap: CanvasLineCap | null = null
+          switch (mStyles.lineCap) {
+            case LINE_CAP_CODE.BUTT:
+              lineCap = 'butt'
+              break
+            case LINE_CAP_CODE.ROUND:
+              lineCap = 'round'
+              break
+            case LINE_CAP_CODE.SQUARE:
+              lineCap = 'square'
+              break
+          }
+
+          let lineJoin: CanvasLineJoin | null = null
+          switch (mStyles.lineJoin) {
+            case LINE_JOIN_CODE.BEVEL:
+              lineJoin = 'bevel'
+              break
+            case LINE_JOIN_CODE.ROUND:
+              lineJoin = 'round'
+              break
+            case LINE_JOIN_CODE.MITER:
+              lineJoin = 'miter'
+              break
+          }
+
+          let fill: RGBA<number, number, number, number> | null = null
+          if (mStyles.fill !== null) {
+            const r = Math.round((mStyles.fill.r ?? 0) * 255)
+            const g = Math.round((mStyles.fill.g ?? 0) * 255)
+            const b = Math.round((mStyles.fill.b ?? 0) * 255)
+            const a = mStyles.fill.a ?? 1
+            fill = `rgba(${r}, ${g}, ${b}, ${a})` as RGBA<
+              number,
+              number,
+              number,
+              number
+            >
+          }
+
+          let stroke: RGBA<number, number, number, number> | null = null
+          if (mStyles.stroke !== null) {
+            const r = Math.round((mStyles.stroke.r ?? 0) * 255)
+            const g = Math.round((mStyles.stroke.g ?? 0) * 255)
+            const b = Math.round((mStyles.stroke.b ?? 0) * 255)
+            const a = mStyles.stroke.a ?? 1
+            stroke = `rgba(${r}, ${g}, ${b}, ${a})` as RGBA<
+              number,
+              number,
+              number,
+              number
+            >
+          }
+
+          const { strokeWidth, miterLimit } = mStyles
+
+          const styles = {
+            lineDash,
+            fill,
+            stroke,
+            lineCap,
+            lineJoin,
+            strokeWidth,
+            miterLimit
+          }
+
+          const transform = {
+            a: mShape.transform?.a ?? 1.0,
+            b: mShape.transform?.b ?? 0.0,
+            c: mShape.transform?.c ?? 0.0,
+            d: mShape.transform?.d ?? 1.0,
+            tx: mShape.transform?.tx ?? 0.0,
+            ty: mShape.transform?.ty ?? 0.0
+          }
+
+          if (mShape.type === SHAPE_TYPE_CODE.SHAPE && mShape.shape !== null) {
+            // Pre-compile path at load time to avoid regex parsing during render
+            const compiledCommands = compilePath(mShape.shape.d)
+            shapes.push({
+              type: SHAPE_TYPE.SHAPE,
+              path: {
+                commands: compiledCommands
+                // Note: original 'd' string is not stored to free heap space
+              },
+              styles,
+              transform
+            })
+          } else if (
+            mShape.type === SHAPE_TYPE_CODE.RECT &&
+            mShape.rect !== null
+          ) {
+            shapes.push({
+              type: SHAPE_TYPE.RECT,
+              path: {
+                x: mShape.rect.x ?? 0,
+                y: mShape.rect.y ?? 0,
+                width: mShape.rect.width ?? 0,
+                height: mShape.rect.height ?? 0,
+                cornerRadius: mShape.rect.cornerRadius ?? 0
+              },
+              styles,
+              transform
+            })
+          } else if (
+            mShape.type === SHAPE_TYPE_CODE.ELLIPSE &&
+            mShape.ellipse !== null
+          ) {
+            shapes.push({
+              type: SHAPE_TYPE.ELLIPSE,
+              path: {
+                x: mShape.ellipse.x ?? 0,
+                y: mShape.ellipse.y ?? 0,
+                radiusX: mShape.ellipse.radiusX ?? 0,
+                radiusY: mShape.ellipse.radiusY ?? 0
+              },
+              styles,
+              transform
+            })
+          }
+        })
+
+        if (
+          mFrame.shapes[0] !== undefined &&
+          mFrame.shapes[0].type === SHAPE_TYPE_CODE.KEEP &&
+          lastShapes !== undefined
+        ) {
+          shapes = lastShapes
+        } else {
+          lastShapes = shapes
+        }
+
+        const llx =
+          transform.a * layout.x + transform.c * layout.y + transform.tx
+        const lrx =
+          transform.a * (layout.x + layout.width) +
+          transform.c * layout.y +
+          transform.tx
+        const lbx =
+          transform.a * layout.x +
+          transform.c * (layout.y + layout.height) +
+          transform.tx
+        const rbx =
+          transform.a * (layout.x + layout.width) +
+          transform.c * (layout.y + layout.height) +
+          transform.tx
+        const lly =
+          transform.b * layout.x + transform.d * layout.y + transform.ty
+        const lry =
+          transform.b * (layout.x + layout.width) +
+          transform.d * layout.y +
+          transform.ty
+        const lby =
+          transform.b * layout.x +
+          transform.d * (layout.y + layout.height) +
+          transform.ty
+        const rby =
+          transform.b * (layout.x + layout.width) +
+          transform.d * (layout.y + layout.height) +
+          transform.ty
+        const nx = Math.min(Math.min(lbx, rbx), Math.min(llx, lrx))
+        const ny = Math.min(Math.min(lby, rby), Math.min(lly, lry))
+
+        // Pre-compile mask path at load time
+        const maskPath =
+          clipPath.length > 0
+            ? {
+                commands: compilePath(clipPath),
+                // Note: original 'd' string is not stored to free heap space
+                transform: undefined,
+                styles: {
+                  fill: 'rgba(0, 0, 0, 0)' as RGBA<0, 0, 0, 0>,
+                  stroke: null,
+                  strokeWidth: null,
+                  lineCap: null,
+                  lineJoin: null,
+                  miterLimit: null,
+                  lineDash: null
+                }
+              }
+            : null
+
+        vSprite.frames.push({
+          alpha: mFrame.alpha ?? 0,
+          layout,
+          transform,
+          clipPath,
+          shapes,
+          nx,
+          ny,
+          maskPath
+        })
+      })
+      this.sprites.push(vSprite)
+    })
+
+    this.images = images
+  }
+}
